@@ -22,11 +22,12 @@
   "dependencies": {
     "@electron-toolkit/preload": "^2.0.0",
     "@electron-toolkit/utils": "^2.0.0",
-    "@whiskeysockets/baileys": "^6.4.1",
     "electron-updater": "^6.1.1",
+    "mongoose": "^7.5.2",
     "qrcode": "^1.5.3",
     "react-router-dom": "^6.16.0",
-    "whatsapp-web.js": "https://github.com/Julzk/whatsapp-web.js/tarball/jkr_hotfix_7"
+    "whatsapp-web.js": "https://github.com/Julzk/whatsapp-web.js/tarball/jkr_hotfix_7",
+    "wwebjs-mongo": "^1.1.0"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "^1.0.1",

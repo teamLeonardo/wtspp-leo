@@ -1,22 +1,35 @@
 
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
-import { join } from 'path'
+import path, { join } from 'path'
+import os from "os"
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import qrcode from "qrcode"
-
-import { Client, LocalAuth } from "whatsapp-web.js";
+import { MongoStore } from 'wwebjs-mongo'
+import mongoose from 'mongoose'
+import { Client, RemoteAuth } from "whatsapp-web.js";
 
 let mainWindow;
+const uri = "mongodb+srv://leonardosm314:NpZIX75F6FVDBvi9@cluster0.n4km1of.mongodb.net/?retryWrites=true&w=majority";
 
-async function connectToWhatsApp() {
+async function connectToWhatsApp(store: any) {
 
   const client = new Client({
-    authStrategy: new LocalAuth(),
-    puppeteer: { headless: true },
-  });
-  console.log("cliente librari");
+    authStrategy: new RemoteAuth({
+      store: store,
+      dataPath: path.join(os.homedir(), 'Documents', "authcacheLeoWtspp"),
+      backupSyncIntervalMs: 300000
+    }),
   
+    puppeteer: {
+      headless: true
+    },
+    webVersionCache: {
+      path: path.join(os.homedir(), 'Documents', "cacheLeoWtspp"),
+      type: "local"
+    }
+  });
+
   client.on("qr", (qr) => {
     if (typeof qr === "string") {
       qrcode.toDataURL(qr, (_, url) => {
@@ -45,7 +58,7 @@ async function connectToWhatsApp() {
   ipcMain.handle("getWtspp", async (_, ...args) => {
     return await client[args[0]](args[1])
   })
-  
+
   client.initialize();
 }
 
@@ -102,13 +115,16 @@ app.whenReady().then(() => {
   })
 
   createWindow()
-  connectToWhatsApp().catch((err) => console.log("unexpected error: " + err));
+  mongoose.connect(uri).then(() => {
+    const store = new MongoStore({ mongoose });
+    connectToWhatsApp(store)
+  })
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow()      
+      createWindow()
     }
   })
 })

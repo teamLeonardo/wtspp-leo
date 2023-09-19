@@ -15,7 +15,7 @@ export const LoaderComponent = () => {
             </dialog>
         }
         {readyConection === false && !!qr === false && <dialog ref={modalQrRef} className="modal modal-open">
-            <div className="modal-box flex justify-center items-center">
+            <div className="modal-box flex flex-col justify-center items-center">
                 <span className="loading loading-ring loading-lg"></span>
                 <div className="text-white text-lg">
                     CONECTANDO

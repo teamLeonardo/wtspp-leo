@@ -12,9 +12,23 @@ export default defineConfig({
   renderer: {
     resolve: {
       alias: {
-        "@": resolve("src/renderer/src"),
         '@renderer': resolve('src/renderer/src')
       }
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          assetFileNames: (assetInfo) => {
+            let extType = (assetInfo?.name as any).split('.').at(1);
+            if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(extType)) {
+              extType = 'img';
+            }
+            return `assets/${extType}/[name]-[hash][extname]`;
+          },
+          chunkFileNames: 'assets/js/[name]-[hash].js',
+          entryFileNames: 'assets/js/[name]-[hash].js',
+        },
+      },
     },
     plugins: [react()]
   }

@@ -1,122 +1,52 @@
-import {
-  makeWASocket,
-  DisconnectReason,
-  useMultiFileAuthState,
-} from "@whiskeysockets/baileys"
 
-import { app, shell, BrowserWindow } from 'electron'
+import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
-import { Boom } from "@hapi/boom"
-import pipo from "pino"
 import qrcode from "qrcode"
 
-const session = "session_auth_info";
-const log: any = pipo
+import { Client, LocalAuth } from "whatsapp-web.js";
 
-let sock;
 let mainWindow;
+
 async function connectToWhatsApp() {
-  const { state, saveCreds } = await useMultiFileAuthState(session);
-  console.log("asdasdasdas asdasdasda");
 
-  sock = makeWASocket({
-    printQRInTerminal: true,
-    auth: state,
-    logger: log({ level: "silent" }),
+  const client = new Client({
+    authStrategy: new LocalAuth(),
+    puppeteer: { headless: true },
   });
-
-  sock.ev.on("connection.update", async (update) => {
-    console.log("update", { ...update });
-
-    const { connection, lastDisconnect, qr } = update
+  console.log("cliente librari");
+  
+  client.on("qr", (qr) => {
     if (typeof qr === "string") {
       qrcode.toDataURL(qr, (_, url) => {
         mainWindow.webContents.send('qr', { qr: url });
       });
     }
-
-    if (connection === "connecting") {
-      console.log("conexión abierta ");
-      return;
-    }
-    if (connection === "close") {
-      let reason = new Boom(lastDisconnect?.error).output.statusCode;
-      if (reason === DisconnectReason.badSession) {
-        console.log(
-          `Bad Session File, Please Delete ${session} and Scan Again`
-        );
-        sock.logout();
-      } else if (reason === DisconnectReason.connectionClosed) {
-        console.log("Conexión cerrada, reconectando....");
-        connectToWhatsApp();
-      } else if (reason === DisconnectReason.connectionLost) {
-        console.log("Conexión perdida del servidor, reconectando...");
-        connectToWhatsApp();
-      } else if (reason === DisconnectReason.connectionReplaced) {
-        console.log(
-          "Conexión reemplazada, otra nueva sesión abierta, cierre la sesión actual primero"
-        );
-        sock.logout();
-      } else if (reason === DisconnectReason.loggedOut) {
-        console.log(
-          `Dispositivo cerrado, elimínelo ${session} y escanear de nuevo.`
-        );
-        sock.logout();
-      } else if (reason === DisconnectReason.restartRequired) {
-        console.log("Se requiere reinicio, reiniciando...");
-        connectToWhatsApp();
-      } else if (reason === DisconnectReason.timedOut) {
-        console.log("Se agotó el tiempo de conexión, conectando...");
-        connectToWhatsApp();
-      } else {
-        sock.end(
-          `Motivo de desconexión desconocido: ${reason}|${lastDisconnect.error}`
-        );
-      }
-    }
-
+  });
+  client.on("authenticated", () => {
+    console.log("AUTH!");
   });
 
-  sock.ev.on("messages.upsert", async ({ messages, type }) => {
-    try {
-      if (type === "notify") {
-        if (!messages[0]?.key.fromMe) {
-          const captureMessage = messages[0]?.message?.conversation;
-          const numberWa = messages[0]?.key?.remoteJid;
-
-          const compareMessage = captureMessage.toLocaleLowerCase();
-
-          if (compareMessage === "ping") {
-            await sock.sendMessage(
-              numberWa,
-              {
-                text: "Pong",
-              },
-              {
-                quoted: messages[0],
-              }
-            );
-          } else {
-            await sock.sendMessage(
-              numberWa,
-              {
-                text: "Soy un robot",
-              },
-              {
-                quoted: messages[0],
-              }
-            );
-          }
-        }
-      }
-    } catch (error) {
-      console.log("error ", error);
-    }
+  client.on("auth_failure", () => {
+    console.log("AUTH Failed !");
+    process.exit();
   });
 
-  sock.ev.on("creds.update", saveCreds);
+  client.on("ready", () => {
+    console.log("ready");
+
+    mainWindow.webContents.send('ready', true);
+  });
+
+  client.on("disconnected", () => {
+    console.log("disconnected");
+  });
+  ipcMain.handle("getWtspp", async (_, ...args) => {
+    return await client[args[0]](args[1])
+  })
+  
+  client.initialize();
 }
 
 function createWindow(): void {
@@ -124,6 +54,7 @@ function createWindow(): void {
   mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
+    resizable: false,
     show: false,
     center: true,
     autoHideMenuBar: true,
@@ -136,7 +67,7 @@ function createWindow(): void {
     }
   })
 
-  mainWindow.webContents.openDevTools();
+  // mainWindow.webContents.openDevTools();
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
@@ -177,8 +108,7 @@ app.whenReady().then(() => {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) {
-      connectToWhatsApp().catch((err) => console.log("unexpected error: " + err));
-      createWindow()
+      createWindow()      
     }
   })
 })

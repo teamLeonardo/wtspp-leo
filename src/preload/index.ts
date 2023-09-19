@@ -9,6 +9,7 @@ const api = {
       func(event, ...args)
     })
   },
+  invoke: (channel: string, ...args: any[]) => ipcRenderer.invoke(channel, ...args)
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

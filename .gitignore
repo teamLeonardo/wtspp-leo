@@ -4,3 +4,5 @@ out
 *.log*
 session_auth_info
 @
+.wwebjs_auth
+.wwebjs_cache

@@ -1,4 +1,8 @@
 
+
+import puppeteer from 'puppeteer-core'
+import pie from 'puppeteer-in-electron'
+
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import path, { join } from 'path'
 import os from "os"
@@ -7,59 +11,72 @@ import icon from '../../resources/icon.png?asset'
 import qrcode from "qrcode"
 import { MongoStore } from 'wwebjs-mongo'
 import mongoose from 'mongoose'
-import { Client, RemoteAuth } from "whatsapp-web.js";
-
+import { Client, RemoteAuth } from "whatsapp-web-electron.js";
+import log from "electron-log"
 let mainWindow;
 const uri = "mongodb+srv://leonardosm314:NpZIX75F6FVDBvi9@cluster0.n4km1of.mongodb.net/?retryWrites=true&w=majority";
 
-async function connectToWhatsApp(store: any) {
 
-  const client = new Client({
-    authStrategy: new RemoteAuth({
-      store: store,
-      dataPath: path.join(os.homedir(), 'Documents', "authcacheLeoWtspp"),
-      backupSyncIntervalMs: 300000
-    }),
-  
-    puppeteer: {
-      headless: true
-    },
-    webVersionCache: {
-      path: path.join(os.homedir(), 'Documents', "cacheLeoWtspp"),
-      type: "local"
-    }
-  });
+async function connectToWhatsApp(store: any, pieBrowser) {
+  log.info('OPEN function!');
+  try {
 
-  client.on("qr", (qr) => {
-    if (typeof qr === "string") {
-      qrcode.toDataURL(qr, (_, url) => {
-        mainWindow.webContents.send('qr', { qr: url });
-      });
-    }
-  });
-  client.on("authenticated", () => {
-    console.log("AUTH!");
-  });
 
-  client.on("auth_failure", () => {
-    console.log("AUTH Failed !");
-    process.exit();
-  });
+    const client = new Client(pieBrowser, mainWindow, {
+      authStrategy: new RemoteAuth({
+        store: store,
+        dataPath: path.join(os.homedir(), 'Documents', "authcacheLeoWtspp"),
+        backupSyncIntervalMs: 300000
+      }),
+      puppeteer: {
+        headless: true
+      },
+      webVersionCache: {
+        path: path.join(os.homedir(), 'Documents', "cacheLeoWtspp"),
+        type: "local"
+      }
+    });
 
-  client.on("ready", () => {
-    console.log("ready");
+    client.on("qr", (qr) => {
+      log.info('qr qr qr');
+      if (typeof qr === "string") {
+        qrcode.toDataURL(qr, (_, url) => {
+          mainWindow.webContents.send('qr', { qr: url });
+        });
+      }
+    });
+    client.on("authenticated", () => {
+      log.info('authenticated');
+      console.log("AUTH!");
+    });
 
-    mainWindow.webContents.send('ready', true);
-  });
+    client.on("auth_failure", () => {
+      console.log("AUTH Failed !");
+      log.info('AUTH Failed !');
+      process.exit();
+    });
 
-  client.on("disconnected", () => {
-    console.log("disconnected");
-  });
-  ipcMain.handle("getWtspp", async (_, ...args) => {
-    return await client[args[0]](args[1])
-  })
+    client.on("ready", () => {
+      console.log("ready");
+      log.info('ready');
+      mainWindow.webContents.send('ready', true);
+    });
 
-  client.initialize();
+    client.on("disconnected", () => {
+      log.info('disconnected');
+      console.log("disconnected");
+    });
+    ipcMain.handle("getWtspp", async (_, ...args) => {
+      return await client[args[0]](args[1])
+    })
+
+    client.initialize();
+  } catch (error) {
+    console.log(error);
+
+    log.info('errorCatch', error);
+  }
+
 }
 
 function createWindow(): void {
@@ -79,7 +96,10 @@ function createWindow(): void {
       sandbox: false
     }
   })
-
+  log.transports.file.level = 'debug'; // Establece el nivel de registro (puedes ajustarlo según tus necesidades)
+  log.transports.file.resolvePath = () => {
+    return path.join(os.homedir(), 'Documents', "userData", "my-app.log")
+  }
   // mainWindow.webContents.openDevTools();
 
   mainWindow.on('ready-to-show', () => {
@@ -115,11 +135,20 @@ app.whenReady().then(() => {
   })
 
   createWindow()
+  log.info('La aplicacion se ha iniciado.');
   mongoose.connect(uri).then(() => {
     const store = new MongoStore({ mongoose });
-    connectToWhatsApp(store)
-  })
-
+    app.commandLine.appendSwitch('remote-debugging-port', '9222')
+    log.info('ok mongo.');
+    pie.connect(app, (puppeteer as any)).then((pieBrowser) => {
+      log.info('ok pie.');
+      connectToWhatsApp(store, pieBrowser)
+    }).catch(()=>{
+      log.info('Error pie.');
+    });
+  }).catch(()=>{
+    log.info('Error mongo.');
+  });
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.

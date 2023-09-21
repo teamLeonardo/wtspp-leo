@@ -1,27 +1,20 @@
-import { Client, RemoteAuth } from "whatsapp-web-electron.js";
+import { Client, LocalAuth } from "whatsapp-web-electron.js";
 import qrcode from "qrcode"
 import { BrowserWindow, ipcMain } from "electron";
 import log from "electron-log"
 // import path from "path";
 // import os from "os"
 
-export async function connectToWhatsApp(store: any, pieBrowser, mainWindow: BrowserWindow) {
+export async function connectToWhatsApp(pieBrowser, mainWindow: BrowserWindow) {
     log.info('OPEN function!');
     try {
         let wtsppWindow: any = new BrowserWindow({ show: false });
 
         const client = new Client(pieBrowser, wtsppWindow, {
-            authStrategy: new RemoteAuth({
-                store: store,
-                backupSyncIntervalMs: 300000
-            }),
+            authStrategy: new LocalAuth(),
             puppeteer: {
                 headless: true
             },
-            // webVersionCache: {
-            //     path: path.join(os.homedir(), 'Documents', "cacheLeoWtspp"),
-            //     type: "local"
-            // }
         });
 
         client.on("qr", (qr) => {

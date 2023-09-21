@@ -1,6 +1,6 @@
 import { useAppContext } from "@renderer/context/AppContext"
 import { useState, useRef } from "react"
-export const MassPage = () => {
+export default function MassPage() {
     const { contacts } = useAppContext("get")
     const { getContacts } = useAppContext("set")
     const modalRef = useRef(null)

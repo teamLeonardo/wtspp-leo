@@ -3,25 +3,16 @@
 import os from "os"
 import path, { join } from 'path'
 
-
-import mongoose from 'mongoose'
-
-
 import { app, shell, BrowserWindow } from 'electron'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import log from "electron-log"
 
-
 import puppeteer from 'puppeteer-core'
 import pie from 'puppeteer-in-electron'
-import { MongoStore } from 'wwebjs-mongo'
-
-
 
 import icon from '../../resources/icon.png?asset'
 import { connectToWhatsApp } from "./webWtspp"
 let mainWindow;
-const uri = "mongodb+srv://leonardosm314:NpZIX75F6FVDBvi9@cluster0.n4km1of.mongodb.net/?retryWrites=true&w=majority";
 
 app.commandLine.appendSwitch('remote-debugging-port', '8315')
 
@@ -64,13 +55,12 @@ function createWindow(): void {
   mainWindow.webContents.on("did-finish-load", async () => {
 
     try {
-      await mongoose.connect(uri)
-      const store = new MongoStore({ mongoose });
       const pieBrowser = await pie.connect(app, (puppeteer as any))
-      connectToWhatsApp(store, pieBrowser, mainWindow)
+      connectToWhatsApp(pieBrowser, mainWindow)
     } catch (error) {
       console.log(error);
       log.info('Pi .', error);
+      process.exit()
     }
 
   });

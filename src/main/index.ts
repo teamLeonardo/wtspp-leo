@@ -1,83 +1,30 @@
 
 
+import os from "os"
+import path, { join } from 'path'
+
+
+import mongoose from 'mongoose'
+
+
+import { app, shell, BrowserWindow } from 'electron'
+import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import log from "electron-log"
+
+
 import puppeteer from 'puppeteer-core'
 import pie from 'puppeteer-in-electron'
-
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
-import path, { join } from 'path'
-import os from "os"
-import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import icon from '../../resources/icon.png?asset'
-import qrcode from "qrcode"
 import { MongoStore } from 'wwebjs-mongo'
-import mongoose from 'mongoose'
-import { Client, RemoteAuth } from "whatsapp-web-electron.js";
-import log from "electron-log"
+
+
+
+import icon from '../../resources/icon.png?asset'
+import { connectToWhatsApp } from "./webWtspp"
 let mainWindow;
 const uri = "mongodb+srv://leonardosm314:NpZIX75F6FVDBvi9@cluster0.n4km1of.mongodb.net/?retryWrites=true&w=majority";
 
+app.commandLine.appendSwitch('remote-debugging-port', '8315')
 
-async function connectToWhatsApp(store: any, pieBrowser) {
-  log.info('OPEN function!');
-  try {
-
-
-    const client = new Client(pieBrowser, mainWindow, {
-      authStrategy: new RemoteAuth({
-        store: store,
-        dataPath: path.join(os.homedir(), 'Documents', "authcacheLeoWtspp"),
-        backupSyncIntervalMs: 300000
-      }),
-      puppeteer: {
-        headless: true
-      },
-      webVersionCache: {
-        path: path.join(os.homedir(), 'Documents', "cacheLeoWtspp"),
-        type: "local"
-      }
-    });
-
-    client.on("qr", (qr) => {
-      log.info('qr qr qr');
-      if (typeof qr === "string") {
-        qrcode.toDataURL(qr, (_, url) => {
-          mainWindow.webContents.send('qr', { qr: url });
-        });
-      }
-    });
-    client.on("authenticated", () => {
-      log.info('authenticated');
-      console.log("AUTH!");
-    });
-
-    client.on("auth_failure", () => {
-      console.log("AUTH Failed !");
-      log.info('AUTH Failed !');
-      process.exit();
-    });
-
-    client.on("ready", () => {
-      console.log("ready");
-      log.info('ready');
-      mainWindow.webContents.send('ready', true);
-    });
-
-    client.on("disconnected", () => {
-      log.info('disconnected');
-      console.log("disconnected");
-    });
-    ipcMain.handle("getWtspp", async (_, ...args) => {
-      return await client[args[0]](args[1])
-    })
-
-    client.initialize();
-  } catch (error) {
-    console.log(error);
-
-    log.info('errorCatch', error);
-  }
-
-}
 
 function createWindow(): void {
   // Create the browser window.
@@ -96,6 +43,7 @@ function createWindow(): void {
       sandbox: false
     }
   })
+  log.info('La aplicacion se ha iniciado.');
   log.transports.file.level = 'debug'; // Establece el nivel de registro (puedes ajustarlo según tus necesidades)
   log.transports.file.resolvePath = () => {
     return path.join(os.homedir(), 'Documents', "userData", "my-app.log")
@@ -105,12 +53,27 @@ function createWindow(): void {
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
   })
-
+  mainWindow.on('closed', function () {
+    mainWindow = null
+  });
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }
   })
 
+  mainWindow.webContents.on("did-finish-load", async () => {
+
+    try {
+      await mongoose.connect(uri)
+      const store = new MongoStore({ mongoose });
+      const pieBrowser = await pie.connect(app, (puppeteer as any))
+      connectToWhatsApp(store, pieBrowser, mainWindow)
+    } catch (error) {
+      console.log(error);
+      log.info('Pi .', error);
+    }
+
+  });
   // HMR for renderer base on electron-vite cli.
   // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
@@ -135,19 +98,11 @@ app.whenReady().then(() => {
   })
 
   createWindow()
-  log.info('La aplicacion se ha iniciado.');
-  mongoose.connect(uri).then(() => {
-    const store = new MongoStore({ mongoose });
-    app.commandLine.appendSwitch('remote-debugging-port', '9222')
-    log.info('ok mongo.');
-    pie.connect(app, (puppeteer as any)).then((pieBrowser) => {
-      log.info('ok pie.');
-      connectToWhatsApp(store, pieBrowser)
-    }).catch(()=>{
-      log.info('Error pie.');
-    });
-  }).catch(()=>{
-    log.info('Error mongo.');
+  app.on("window-all-closed", () => {
+    if (process.platform !== 'darwin') {
+      app.quit();
+      process.exit();
+    }
   });
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
@@ -158,19 +113,7 @@ app.whenReady().then(() => {
   })
 })
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
 
-// ipcMain.on('init-wtspp', async (e, opt) => {
-//   // const data = await TodoService.handleTodoFormSubmit(opt);
-//   // mainWindow.webContents.send('task:added', { task: data });
-// });
-// explicitly with Cmd + Q.
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
 
 
 

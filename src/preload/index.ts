@@ -12,6 +12,14 @@ const api = {
   invoke: (channel: string, ...args: any[]) => ipcRenderer.invoke(channel, ...args)
 }
 
+const store = {
+  get(key) {
+    return ipcRenderer.sendSync('electron-store-get', key);
+  },
+  set(property, val) {
+    ipcRenderer.send('electron-store-set', property, val);
+  },
+}
 // Use `contextBridge` APIs to expose Electron APIs to
 // renderer only if context isolation is enabled, otherwise
 // just add to the DOM global.
@@ -19,6 +27,7 @@ if (process?.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('electron', electronAPI)
     contextBridge.exposeInMainWorld('api', api)
+    contextBridge.exposeInMainWorld('store', store)
   } catch (error) {
     console.error(error)
   }

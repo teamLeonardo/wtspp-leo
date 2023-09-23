@@ -6,7 +6,6 @@ import log from "electron-log"
 // import os from "os"
 
 export async function connectToWhatsApp(pieBrowser, mainWindow: BrowserWindow) {
-    log.info('OPEN function!');
     try {
         let wtsppWindow: any = new BrowserWindow({ show: false });
 
@@ -18,7 +17,6 @@ export async function connectToWhatsApp(pieBrowser, mainWindow: BrowserWindow) {
         });
 
         client.on("qr", (qr) => {
-            log.info('qr qr qr');
             if (typeof qr === "string") {
                 qrcode.toDataURL(qr, (_, url) => {
                     mainWindow.webContents.send('qr', { qr: url });

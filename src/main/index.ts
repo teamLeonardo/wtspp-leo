@@ -3,9 +3,10 @@
 import os from "os"
 import path, { join } from 'path'
 
-import { app, shell, BrowserWindow } from 'electron'
+import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import log from "electron-log"
+import Store from 'electron-store';
 
 import puppeteer from 'puppeteer-core'
 import pie from 'puppeteer-in-electron'
@@ -16,6 +17,7 @@ let mainWindow;
 
 app.commandLine.appendSwitch('remote-debugging-port', '8315')
 
+const store = new Store();
 
 function createWindow(): void {
   // Create the browser window.
@@ -50,7 +52,16 @@ function createWindow(): void {
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }
-  })
+  });
+  
+  // IPC listener
+  ipcMain.on('electron-store-get', async (event, val) => {
+    event.returnValue = store.get(val);
+  });
+
+  ipcMain.on('electron-store-set', async (_, key, val) => {
+    store.set(key, val);
+  });
 
   mainWindow.webContents.on("did-finish-load", async () => {
 

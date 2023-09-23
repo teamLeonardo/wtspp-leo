@@ -1,5 +1,6 @@
 import { useAppContext } from "@renderer/context/AppContext"
-import { useState, useRef } from "react"
+import { scrollUp } from "@renderer/util/utiles"
+import { useState, useRef, useEffect } from "react"
 export default function MassPage() {
     const { contacts } = useAppContext("get")
     const { getContacts } = useAppContext("set")
@@ -33,6 +34,11 @@ export default function MassPage() {
             </div>
         }
     };
+    useEffect(()=> {
+        return ()=> {
+            scrollUp()
+        }
+    }, [])
     return (
 
         <div className="w-full">

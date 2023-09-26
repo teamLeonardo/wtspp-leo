@@ -1,75 +1,116 @@
+
 import { create } from 'zustand'
 
 
-interface IMessage {
-    orden: number,
+export interface IMessage {
+    id: number,
     message: string,
-    whitImage: boolean,
-    keyImage: string
+    whitMedia: boolean,
+    keyMedia: string
 }
-interface IImages {
-    [key: string]: string
+interface IMedia {
+    [key: string]: object
 }
 interface TempalteAddState {
-    pageState: number
-    increase: (by: number) => void,
+    pageState: number,
+    messageInput: string,
     info: {
         name: string,
         description: string,
-        images: IImages,
+        media: IMedia,
         messages: IMessage[]
     },
+    setMessageInput: (by: string, isEmogi: boolean) => void,
+    increase: (by: number) => void,
+    addName: (by: IAddNameAttr) => boolean,
+    addMedia: (by: IMedia) => void,
+    addMesages: (by: IMessage | IMessage[]) => void,
+    saveInfo: () => boolean,
+    getInfoListTemplate: () => any[]
 }
-interface IAddNameAttr {
+export interface IAddNameAttr {
     name: string,
     description: string
 }
 
+const defaulInfo = {
+    name: "",
+    description: "",
+    media: {},
+    messages: []
+}
 export const useTempalteAddStore = create<TempalteAddState>()((set, get) => ({
     pageState: 0,
-    info: {
-        name: "",
-        description: "",
-        images: {},
-        messages: []
+    info: defaulInfo,
+    messageInput: "",
+    setMessageInput: (by: string, isEmogi: boolean) => {
+        set((state) => ({ messageInput: isEmogi ? state.messageInput + by : by }))
     },
     increase: (by: number) => set(() => ({ pageState: by })),
-    addName: (attr: IAddNameAttr) => {
-        set((state) => ({
-            info: {
-                ...state.info,
-                name: attr.name,
-                description: attr.description
-            }
-        }))
+    addName: (attr: IAddNameAttr): boolean => {
+        try {
+            set((state) => ({
+                info: {
+                    ...state.info,
+                    name: attr.name,
+                    description: attr.description
+                }
+            }))
+            return true
+        } catch (error) {
+            return false
+        }
     },
-    addImages: (attr: IImages) => {
+    addMedia: (attr: IMedia) => {
         set((state) => ({
             info: {
                 ...state.info,
-                images: {
-                    ...state.info.images,
+                media: {
+                    ...state.info.media,
                     ...attr
                 }
             }
         }))
     },
-    addMesages: (attr: IMessage) => {
-        set((state) => ({
-            info: {
-                ...state.info,
-                messages: [
-                    ...state.info.messages,
-                    attr
-                ]
+    addMesages: (attr: IMessage | IMessage[]) => {
+        set((state) => {
+            if (Array.isArray(attr)) {
+                return {
+                    info: {
+                        ...state.info,
+                        messages: attr
+                    }
+                }
+            } else {
+                return {
+                    info: {
+                        ...state.info,
+                        messages: [
+                            ...state.info.messages,
+                            attr
+                        ]
+                    }
+                }
             }
-        }))
+        })
     },
-    saveInfo: () => {
-        
-        window.store.set('listTemplate', [
-            ...window.store.get('listTemplate'),
-            get().info
-        ]);
+    saveInfo: (): boolean => {
+        try {
+            const lista = window.store.get('listTemplate') || []
+            window.store.set('listTemplate', [
+                ...lista,
+                get().info
+            ]);
+            set(() => ({ info: defaulInfo, messageInput: "", pageState: 0 }));
+            return true
+
+        } catch (error) {
+            console.log(error);
+            return false
+        }
+    },
+    getInfoListTemplate: (): any[] => {
+        const lista = window.store.get('listTemplate') || []
+        return lista
     }
 }))

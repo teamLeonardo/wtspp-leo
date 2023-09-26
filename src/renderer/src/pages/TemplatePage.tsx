@@ -3,11 +3,13 @@ import { AiOutlinePlus, AiFillDelete } from "react-icons/ai"
 import { IoEyeSharp } from "react-icons/io5"
 import { useEffect } from "react"
 import { scrollUp } from "@renderer/util/utiles"
-const ItemTemplate = () => {
+import { useTempalteAddStore } from "@renderer/context/storeTemplate"
+const ItemTemplate = ({ info }) => {
+
     return <div className="card w-[200px] h-[150px] m-0 border border-primary bg-base-100 shadow-xl">
         <div className="card-body mt-0 p-4">
-            <h2 className="card-title text-md truncate">Card title!</h2>
-            <p className="text-xs h-auto w-full truncate">Lorem ipsum dolor sit amet consectetur adipisicing elit. Saepe facilis eos nostrum maxime reprehenderit dignissimos iure iste aspernatur accusantium quia. Perferendis reiciendis ad quasi illo, adipisci dolor molestiae incidunt impedit.</p>
+            <h2 className="card-title text-md truncate">{info.name || ""}</h2>
+            <p className="text-xs h-auto w-full truncate">{info.description || ""}</p>
             <div className="card-actions gap-1 flex-nowrap justify-center">
                 <button className="btn btn-primary btn-circle">
                     <IoEyeSharp size={20} />
@@ -20,6 +22,7 @@ const ItemTemplate = () => {
     </div>
 }
 export const Template = () => {
+    const getInfoListTemplate = useTempalteAddStore((state) => state.getInfoListTemplate)
     useEffect(() => {
         return () => {
             scrollUp()
@@ -27,7 +30,7 @@ export const Template = () => {
     }, [])
     return <div className="relative w-full h-full p-4 gap-4 grid grid-rows-[auto,1fr]">
         <div className="flex justify-center items-center">
-            <h1 className="text-xl text-white"> Agrega nuevo template</h1>
+            <h1 className="text-xl text-white">Plantillas de Mensages.</h1>
         </div>
         <div className="relative">
             <div className="flex flex-wrap gap-3 justify-start ">
@@ -38,22 +41,11 @@ export const Template = () => {
                         </Link>
                     </div>
                 </div>
-                <ItemTemplate />
-                <ItemTemplate />
-                <ItemTemplate />
-                <ItemTemplate />
-                <ItemTemplate />
-                <ItemTemplate />
-                <ItemTemplate />
-                <ItemTemplate />
-                <ItemTemplate />
-                <ItemTemplate />
-                <ItemTemplate />
-                <ItemTemplate />
-                <ItemTemplate />
-                <ItemTemplate />
-                <ItemTemplate />
-                <ItemTemplate />
+                {
+                    getInfoListTemplate().map((val, idx) => {
+                        return <ItemTemplate info={val} key={idx} />
+                    })
+                }
             </div>
         </div>
 

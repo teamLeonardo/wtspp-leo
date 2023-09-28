@@ -7,6 +7,7 @@ import { lazy } from 'react';
 import { Template } from './pages/TemplatePage';
 import AddTemplate from './pages/AddTemplatePage';
 import { ItemsMenu } from './components/ItemsMenu';
+import { BtnLogOut } from './components/BtnLogOut';
 const MassPage = lazy(() => import('./pages/MassPage'));
 
 function App(): JSX.Element {
@@ -53,6 +54,11 @@ function App(): JSX.Element {
                 <ItemsMenu />
               </LoadApp>
             </ul>
+            <div className='absolute bottom-3 right-6 '>
+              <LoadApp>
+                <BtnLogOut />
+              </LoadApp>
+            </div>
           </div>
 
         </div>

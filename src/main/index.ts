@@ -22,8 +22,8 @@ const store = new Store();
 function createWindow(): void {
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
+    width: 960,
+    height: 770,
     resizable: false,
     show: false,
     center: true,

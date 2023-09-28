@@ -18,6 +18,7 @@ export const AppContextProvider = ({ children }) => {
 
     const [contacts, setContacts] = useState<any[]>([])
 
+    const [phone, setPhone] = useState<string[]>([])
 
     api.on("qr", (_: any, data: any) => {
         if (typeof data.qr === "string" && data.qr !== "") {
@@ -35,6 +36,7 @@ export const AppContextProvider = ({ children }) => {
                 })
         }
     })
+
     const getContacts = async (param: any) => {
         try {
             if (typeof param === "string") {
@@ -58,14 +60,38 @@ export const AppContextProvider = ({ children }) => {
         // isMyContact
         return data.filter((contact) => !!contact.isMyContact === true)
     }
+
+    const signOut = () => {
+        api.invoke(getWtspp, "logout").then(() => {
+            console.log("se cerro");
+
+        })
+    }
+
+    const setListCheck = (phoneWtspp: string | string[]) => {
+        if (typeof phoneWtspp === "string") {
+            setPhone((state) => [...state, phoneWtspp])
+        } else {
+            setPhone((state) => [...state, ...phoneWtspp])
+        }
+    }
+
+    const removeCheck = (phoneWtspp: string) => {
+        setPhone((state) => (state.filter((phone) => phone !== phoneWtspp)))
+    }
+
     return <AppContext.Provider value={{
         get: {
             qr: imgBase68,
             readyConection,
-            contacts
+            contacts,
+            phone
         },
         set: {
-            getContacts
+            removeCheck,
+            setListCheck,
+            getContacts,
+            signOut
         }
     }}>
         {children}

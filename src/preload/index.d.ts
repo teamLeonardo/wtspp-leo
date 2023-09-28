@@ -3,7 +3,11 @@ import { ElectronAPI } from '@electron-toolkit/preload'
 declare global {
   interface Window {
     electron: ElectronAPI
-    api: unknown,
+    api: {
+      send: (channel: any, data: any) => void,
+      on: (channel: any, func: any) => void,
+      invoke: (channel: string, ...args: any[]) => Promise
+    },
     store: {
       get: (key: string) => any;
       set: (key: string, val: any) => void;

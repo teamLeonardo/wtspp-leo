@@ -5,7 +5,7 @@ import log from "electron-log"
 // import path from "path";
 // import os from "os"
 
-export async function connectToWhatsApp(pieBrowser, mainWindow: BrowserWindow) {
+export async function connectToWhatsApp(pieBrowser, mainWindow: BrowserWindow | null) {
     try {
         let wtsppWindow: any = new BrowserWindow({ show: false });
 
@@ -19,7 +19,7 @@ export async function connectToWhatsApp(pieBrowser, mainWindow: BrowserWindow) {
         client.on("qr", (qr) => {
             if (typeof qr === "string") {
                 qrcode.toDataURL(qr, (_, url) => {
-                    mainWindow.webContents.send('qr', { qr: url });
+                    mainWindow?.webContents.send('qr', { qr: url });
                 });
             }
         });
@@ -37,21 +37,32 @@ export async function connectToWhatsApp(pieBrowser, mainWindow: BrowserWindow) {
         client.on("ready", () => {
             console.log("ready");
             log.info('ready');
-            mainWindow.webContents.send('ready', true);
+            mainWindow?.webContents.send('ready', true);
         });
 
         client.on("disconnected", () => {
             log.info('disconnected');
             console.log("disconnected");
+            wtsppWindow.destroy();
+            mainWindow?.close()
+            mainWindow = null
         });
         ipcMain.handle("getWtspp", async (_, ...args) => {
-            return await client[args[0]](args[1])
+            try {
+                const [nameFunction, ...restoParametros] = args
+                return await client[nameFunction](...restoParametros)
+            } catch (error) {
+                console.log(error);
+                
+                return error
+            }
         })
 
         client.initialize();
 
-        mainWindow.on('closed', function () {
+        mainWindow?.on('closed', function () {
             wtsppWindow.close()
+            wtsppWindow.destroy();
             wtsppWindow = null
         });
     } catch (error) {

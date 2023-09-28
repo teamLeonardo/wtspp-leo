@@ -1,4 +1,5 @@
 
+import { uid } from '@renderer/util/utiles'
 import { create } from 'zustand'
 
 
@@ -96,11 +97,17 @@ export const useTempalteAddStore = create<TempalteAddState>()((set, get) => ({
     },
     saveInfo: (): boolean => {
         try {
-            const lista = window.store.get('listTemplate') || []
+
+            const lista = window.store.get('listTemplate') || [];
+
             window.store.set('listTemplate', [
                 ...lista,
-                get().info
+                {
+                    ...get().info,
+                    uid: uid()
+                }
             ]);
+            
             set(() => ({ info: defaulInfo, messageInput: "", pageState: 0 }));
             return true
 

@@ -1,4 +1,4 @@
-import { Client, LocalAuth } from "whatsapp-web-electron.js";
+import { Client, LocalAuth, MessageMedia } from "whatsapp-web-electron.js";
 import qrcode from "qrcode"
 import { BrowserWindow, ipcMain } from "electron";
 import log from "electron-log"
@@ -50,11 +50,14 @@ export async function connectToWhatsApp(pieBrowser, mainWindow: BrowserWindow | 
         });
         ipcMain.handle("getWtspp", async (_, ...args) => {
             try {
-                const [nameFunction, ...restoParametros] = args
+                let [nameFunction, ...restoParametros] = args
+                if (nameFunction === "sendMessageMedia") {
+                    nameFunction = "sendMessage";
+                    restoParametros[1] = MessageMedia.fromFilePath(restoParametros[1]);
+                }
                 return await client[nameFunction](...restoParametros)
             } catch (error) {
                 console.log(error);
-                
                 return error
             }
         })

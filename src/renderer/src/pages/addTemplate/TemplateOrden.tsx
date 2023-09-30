@@ -64,9 +64,13 @@ export default function TemplateOrden({ orden }) {
     const createNewItem = (): IMessage => ({
         id: messages.length + 1,
         message: messageInput,
-        keyMedia: messageMedia.map((media) => {
+        keyMedia: isMedia ? messageMedia.map((media) => {
             return Object.keys(media)[0]
-        }) || [],
+        }) : [],
+        pathMedia: isMedia ? messageMedia.map((media) => {
+            const urlPath = Object.values(media)[0] as any
+            return urlPath.path
+        }) : [],
         whitMedia: isMedia,
     });
 

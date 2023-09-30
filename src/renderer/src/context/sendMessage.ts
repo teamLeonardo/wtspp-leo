@@ -85,15 +85,17 @@ export const useSendMessage = create<ISendMessageState>()((set, get) => ({
             if (!!listTemplate.length && list.length) {
                 const filterList = listTemplate.find((val) => val.uid === uid) as any
                 if (filterList && filterList.messages) {
-                    console.log("filterList.messages===>", filterList.messages);
-                    
                     const messages = (filterList.messages as IMessage[])
-                        // .sort((a, b) => a.id - b.id);
                     for (const number of list) {
                         try {
                             changeState(number, STATE_SEND.warning)
-                            for (const { message } of messages) {
-                                await window.api.invoke("getWtspp", "sendMessage", number, message)
+                            for (const { message, whitMedia, pathMedia } of messages) {
+                                console.log({ message, whitMedia, pathMedia });
+                                if (whitMedia) {
+                                    await window.api.invoke("getWtspp", "sendMessageMedia", number, pathMedia[0], { caption: message })
+                                } else {
+                                    await window.api.invoke("getWtspp", "sendMessage", number, message)
+                                }
                             }
                             changeState(number, STATE_SEND.success)
                             await sleep(5 * 1000)

@@ -7,7 +7,8 @@ export interface IMessage {
     id: number,
     message: string,
     whitMedia: boolean,
-    keyMedia: string[]
+    keyMedia: string[],
+    pathMedia: string[]
 }
 interface IMedia {
     [key: string]: object

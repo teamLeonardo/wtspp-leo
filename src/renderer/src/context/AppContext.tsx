@@ -1,4 +1,5 @@
 import { createContext, useContext, useState } from "react"
+import { IInfo } from "./storeTemplate";
 
 
 const AppContext = createContext({})
@@ -20,10 +21,15 @@ export const AppContextProvider = ({ children }) => {
 
     const [phone, setPhone] = useState<string[]>([])
 
+    const [listTemplate , setListTemplate]= useState<IInfo[]>([])
+
     api.on("qr", (_: any, data: any) => {
         if (typeof data.qr === "string" && data.qr !== "") {
             setImgBase68(data.qr)
         }
+    })
+    api.on("listTemplate", (_: any, data: IInfo[]) => {
+        setListTemplate(data)
     })
 
     api.on("ready", async (_: any, data: boolean) => {
@@ -85,7 +91,8 @@ export const AppContextProvider = ({ children }) => {
             qr: imgBase68,
             readyConection,
             contacts,
-            phone
+            phone,
+            listTemplate
         },
         set: {
             removeCheck,

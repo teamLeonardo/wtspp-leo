@@ -1,6 +1,6 @@
 import { IMessage, useTempalteAddStore } from "@renderer/context/storeTemplate"
-import { numberCompare } from "@renderer/util/utiles"
-import { DndContext, closestCenter } from "@dnd-kit/core";
+import { numberCompare, scrollDown } from "@renderer/util/utiles"
+import { DndContext, MouseSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
 import {
     SortableContext,
     verticalListSortingStrategy,
@@ -8,20 +8,41 @@ import {
 } from "@dnd-kit/sortable";
 import imgbg from "@renderer/assets/wtsppwallpaper.jpg"
 import { IoMdSend } from "react-icons/io"
-import { AiOutlinePlus } from "react-icons/ai"
+
+
 import { EmoginFloting } from "@renderer/components/EmoginFloting";
 import { MessageItem } from "@renderer/components/MessageItem";
 
-
+import { useRef } from "react"
+import { BtnMenuPlusMessage } from "@renderer/components/BtnMenuPlusMessage";
+import { FaFileAlt, FaFilePdf } from "react-icons/fa";
 
 export default function TemplateOrden({ orden }) {
 
-    const pageState = useTempalteAddStore((state) => state.pageState);
+    const [
+        pageState,
+        messageMedia,
+        currenSelectMedia
+    ] = useTempalteAddStore((state) => [
+        state.pageState,
+        state.messageMedia,
+        state.currenSelectMedia
+    ]);
+    const isMedia: boolean = (messageMedia.length > 0);
+    const sensors = useSensors(
+        useSensor(MouseSensor, {
+            // Require the mouse to move by 10 pixels before activating
+            activationConstraint: {
+                distance: 10,
+            },
+        })
+    );
 
     const [messageInput, setMessageInput] = useTempalteAddStore((state) => ([state.messageInput, state.setMessageInput]));
 
     const [addMesages, messages] = useTempalteAddStore((state) => [state.addMesages, state.info.messages]);
 
+    const RefContainer = useRef(null)
 
     if (numberCompare(orden, pageState) === false) {
         return <></>
@@ -36,7 +57,6 @@ export default function TemplateOrden({ orden }) {
                     const newIndex = messages.findIndex((message) => message.id === over.id);
                     addMesages(arrayMove(messages, oldIndex, newIndex))
                 }
-               
             }
         }
     };
@@ -44,14 +64,23 @@ export default function TemplateOrden({ orden }) {
     const createNewItem = (): IMessage => ({
         id: messages.length + 1,
         message: messageInput,
-        keyMedia: "",
-        whitMedia: false,
+        keyMedia: messageMedia.map((media) => {
+            return Object.keys(media)[0]
+        }) || [],
+        whitMedia: isMedia,
     });
 
     const handleClickAdd = () => {
         const newItem = createNewItem()
+        // agrega el mensaje
         addMesages(newItem)
+        // limpia input
         setMessageInput("", false)
+        currenSelectMedia({})
+        // scrolea asia abajo
+        setTimeout(() => {
+            scrollDown(RefContainer.current)
+        }, 0);
     }
 
     return <div
@@ -66,10 +95,11 @@ export default function TemplateOrden({ orden }) {
             backgroundImage: `url(${imgbg})`,
         }}
     >
-        <div className="relative overflow-x-hidden overflow-y-auto pt-6 pr-2 ">
+        <div className="relative overflow-x-hidden overflow-y-auto pt-6 pr-2 ml-[500px]" ref={RefContainer}>
             <DndContext
                 collisionDetection={closestCenter}
                 onDragEnd={handleDragEnd}
+                sensors={sensors}
             >
 
                 <SortableContext
@@ -85,19 +115,61 @@ export default function TemplateOrden({ orden }) {
         <div className="relative h-[70px] flex justify-center items-center">
             <div className="flex flex-nowrap items-center gap-2">
                 <EmoginFloting />
-                <div className="btn btn-neutral btn-sm btn-circle" >
-                    <AiOutlinePlus size={20} />
+                <BtnMenuPlusMessage />
+                <div className="relative w-[400px] max-w-lg">
+                    <textarea
+                        placeholder="Escribe aqui."
+                        className="input w-full input-bordered input-primary  input-sm"
+                        defaultValue={""}
+                        value={messageInput}
+                        onChange={(e) => {
+                            setMessageInput(e.currentTarget.value || "", false)
+                        }}
+                    />
+                    <div
+                        className="card w-[500px] max-h-[100px] bg-base-100 shadow-xl absolute top-[-120px] left-0 overflow-visible"
+                        style={{
+                            display: isMedia ? "block" : "none"
+                        }}
+                    >
+                        <div className="card-body flex flex-row flex-nowrap w-full">
+                            {
+                                isMedia && messageMedia.map((media) => {
+                                    const name: any = Object.keys(media)[0]
+                                    const value: any = Object.values(media)[0]
+                                    if ((value?.type as string).includes("image")) {
+                                        return <img
+                                            key={name}
+                                            className="mask mask-squircle w-[50px] h-[50px]"
+                                            src={value.base}
+                                        />
+                                    }
+                                    if ((value?.type as string).includes("pdf")) {
+                                        return <div
+                                            key={name}
+                                            className="bg-red-500 w-[50px] h-[50px] border rounded-md flex flex-col justify-center items-center"
+                                        >
+                                            <FaFilePdf />
+                                            <div className="truncate w-[90%]">
+                                                {name}
+                                            </div>
+                                        </div>
+                                    }
+                                    return <div
+                                        key={name}
+                                        className="bg-gray-700 w-[50px] h-[50px] border rounded-md flex flex-col justify-center items-center"
+                                    >
+                                        <FaFileAlt />
+                                        <div className="truncate w-[90%]">
+                                            {name}
+                                        </div>
+                                    </div>
+
+                                })
+                            }
+                        </div>
+                    </div>
                 </div>
-                <input
-                    type="text"
-                    placeholder="Type here"
-                    className="input input-bordered input-primary w-[400px] max-w-lg input-sm"
-                    defaultValue={""}
-                    value={messageInput}
-                    onChange={(e) => {
-                        setMessageInput(e.currentTarget.value || "", false)
-                    }}
-                />
                 <div className="btn btn-primary btn-sm btn-circle" onClick={() => handleClickAdd()}>
                     <IoMdSend size={20} />
                 </div>

@@ -1,7 +1,7 @@
 
 import { create } from 'zustand'
 import { IMessage } from './storeTemplate'
-import { STATE_SEND } from '@renderer/util/utiles'
+import { STATE_SEND, sleep } from '@renderer/util/utiles'
 
 interface ISendMessageState {
     list: string[]
@@ -31,55 +31,80 @@ export const useSendMessage = create<ISendMessageState>()((set, get) => ({
                 accumulator[curValue] = state.listStatePhone[curValue] || STATE_SEND.idle
                 return accumulator
             }, {})
-
+            const countSend = Object.values(newlistStatePhone)
+                .filter((state) => state === STATE_SEND.success).length;
             return {
                 list: newList,
-                listStatePhone: newlistStatePhone
+                listStatePhone: newlistStatePhone,
+                stateAllSend: `${countSend}/${newList.length}`
             }
         })
     },
     removePhone(by: string) {
-        set((state) => ({
-            list: state.list.filter((phone) => phone !== by),
-            listStatePhone: Object
+        set((state) => {
+            const newList = state.list.filter((phone) => phone !== by);
+            const newlistStatePhone = Object
                 .keys(state.listStatePhone)
                 .filter(key => key !== by)
                 .reduce((obj, key) => {
                     obj[key] = state.listStatePhone[key];
                     return obj;
-                }, {})
-        }))
+                }, {});
+            const countSend = Object.values(newlistStatePhone)
+                .filter((state) => state === STATE_SEND.success).length;
+            return {
+                list: newList,
+                listStatePhone: newlistStatePhone,
+                stateAllSend: `${countSend}/${newList.length}`
+            }
+        })
     },
-    sendMessage(uid: string) {
-        const listTemplate: any[] = window.store.get('listTemplate') || [];
-        const list = get().list;
-        const changeState = (number, state) => {
-            set(({ listStatePhone }) => (
-                {
-                    listStatePhone: {
+    async sendMessage(uid: string) {
+        try {
+
+
+            const changeState = (number, state) => {
+                set(({ listStatePhone, list }) => {
+                    const newlistStatePhone = {
                         ...listStatePhone,
                         ...{ [number]: state }
+                    };
+                    const countSend = Object.values(newlistStatePhone)
+                        .filter((state) => state === STATE_SEND.success).length;
+                    return {
+                        listStatePhone: newlistStatePhone,
+                        stateAllSend: `${countSend}/${list.length}`
                     }
-                }
-            ))
-        }
-        if (!!listTemplate.length && list.length) {
-            const filterList = listTemplate.find((val) => val.uid === uid) as any
-            if (filterList && filterList.messages) {
-                const messages = (filterList.messages as IMessage[]).sort((a, b) => a.id - b.id);
-                list.forEach((number: string) => {
-                    try {
-                        changeState(number, STATE_SEND.warning)
-                        messages.forEach(async (message) => {
-                            await window.api.invoke("getWtspp", "sendMessage", number, message)
-                        })
-                        changeState(number, STATE_SEND.success)
-                    } catch (error) {
-                        changeState(number, STATE_SEND.error)
-                    }
-
                 })
             }
+
+            const listTemplate: any[] = window.store.get('listTemplate') || [];
+
+            const list = get().list;
+
+            if (!!listTemplate.length && list.length) {
+                const filterList = listTemplate.find((val) => val.uid === uid) as any
+                if (filterList && filterList.messages) {
+                    console.log("filterList.messages===>", filterList.messages);
+                    
+                    const messages = (filterList.messages as IMessage[])
+                        // .sort((a, b) => a.id - b.id);
+                    for (const number of list) {
+                        try {
+                            changeState(number, STATE_SEND.warning)
+                            for (const { message } of messages) {
+                                await window.api.invoke("getWtspp", "sendMessage", number, message)
+                            }
+                            changeState(number, STATE_SEND.success)
+                            await sleep(5 * 1000)
+                        } catch (error) {
+                            changeState(number, STATE_SEND.error)
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.log(error);
         }
     }
 

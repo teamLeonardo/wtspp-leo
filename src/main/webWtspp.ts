@@ -5,7 +5,7 @@ import log from "electron-log"
 // import path from "path";
 // import os from "os"
 
-export async function connectToWhatsApp(pieBrowser, mainWindow: BrowserWindow | null) {
+export async function connectToWhatsApp(pieBrowser, mainWindow: BrowserWindow | null, store) {
     try {
         let wtsppWindow: any = new BrowserWindow({ show: false });
 
@@ -38,6 +38,7 @@ export async function connectToWhatsApp(pieBrowser, mainWindow: BrowserWindow | 
             console.log("ready");
             log.info('ready');
             mainWindow?.webContents.send('ready', true);
+            mainWindow?.webContents.send('listTemplate', store.get("listTemplate"));
         });
 
         client.on("disconnected", () => {

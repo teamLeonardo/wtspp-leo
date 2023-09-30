@@ -13,12 +13,14 @@ import pie from 'puppeteer-in-electron'
 
 import icon from '../../resources/icon.png?asset'
 import { connectToWhatsApp } from "./webWtspp"
-let mainWindow;
+
 
 app.commandLine.appendSwitch('remote-debugging-port', '8315')
 
-const store = new Store();
+const store = new Store({ watch: true });
 
+let mainWindow;
+let unsubscribe;
 function createWindow(): void {
   // Create the browser window.
   mainWindow = new BrowserWindow({
@@ -35,7 +37,8 @@ function createWindow(): void {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
     }
-  })
+  });
+  mainWindow.setMaxListeners(20);
   log.info('La aplicacion se ha iniciado.');
   log.transports.file.level = 'debug'; // Establece el nivel de registro (puedes ajustarlo según tus necesidades)
   log.transports.file.resolvePath = () => {
@@ -53,7 +56,7 @@ function createWindow(): void {
     shell.openExternal(details.url)
     return { action: 'deny' }
   });
-  
+
   // IPC listener
   ipcMain.on('electron-store-get', async (event, val) => {
     event.returnValue = store.get(val);
@@ -63,11 +66,15 @@ function createWindow(): void {
     store.set(key, val);
   });
 
+  unsubscribe = store.onDidChange("listTemplate", (newValue) => {
+    mainWindow?.webContents.send('listTemplate', newValue);
+  });
+
   mainWindow.webContents.on("did-finish-load", async () => {
 
     try {
       const pieBrowser = await pie.connect(app, (puppeteer as any))
-      connectToWhatsApp(pieBrowser, mainWindow)
+      connectToWhatsApp(pieBrowser, mainWindow, store)
     } catch (error) {
       console.log(error);
       log.info('Pi .', error);
@@ -101,6 +108,7 @@ app.whenReady().then(() => {
   createWindow()
   app.on("window-all-closed", () => {
     if (process.platform !== 'darwin') {
+      unsubscribe()
       app.quit();
       process.exit();
     }

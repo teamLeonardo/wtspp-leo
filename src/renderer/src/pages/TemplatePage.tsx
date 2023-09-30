@@ -4,8 +4,9 @@ import { IoEyeSharp } from "react-icons/io5"
 import { useEffect } from "react"
 import { scrollUp } from "@renderer/util/utiles"
 import { useTempalteAddStore } from "@renderer/context/storeTemplate"
+import { useAppContext } from "@renderer/context/AppContext"
 const ItemTemplate = ({ info }) => {
-
+    const removeInfo = useTempalteAddStore((state) => state.removeInfo)
     return <div className="card w-[200px] h-[150px] m-0 border border-primary bg-base-100 shadow-xl">
         <div className="card-body mt-0 p-4">
             <h2 className="card-title text-md truncate">{info.name || ""}</h2>
@@ -14,7 +15,7 @@ const ItemTemplate = ({ info }) => {
                 <button className="btn btn-primary btn-circle">
                     <IoEyeSharp size={20} />
                 </button>
-                <button className="btn btn-secondary btn-circle">
+                <button className="btn btn-secondary btn-circle" onClick={() => removeInfo(info.uid)}>
                     <AiFillDelete size={20} />
                 </button>
             </div>
@@ -22,7 +23,7 @@ const ItemTemplate = ({ info }) => {
     </div>
 }
 export const Template = () => {
-    const getInfoListTemplate = useTempalteAddStore((state) => state.getInfoListTemplate)
+    const { listTemplate } = useAppContext("get")
     useEffect(() => {
         return () => {
             scrollUp()
@@ -42,7 +43,7 @@ export const Template = () => {
                     </div>
                 </div>
                 {
-                    getInfoListTemplate().map((val, idx) => {
+                    listTemplate.map((val, idx) => {
                         return <ItemTemplate info={val} key={idx} />
                     })
                 }

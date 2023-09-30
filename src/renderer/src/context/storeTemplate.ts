@@ -1,5 +1,5 @@
 
-import { uid } from '@renderer/util/utiles'
+import { mergeArray, uid } from '@renderer/util/utiles'
 import { create } from 'zustand'
 
 
@@ -7,43 +7,52 @@ export interface IMessage {
     id: number,
     message: string,
     whitMedia: boolean,
-    keyMedia: string
+    keyMedia: string[]
 }
 interface IMedia {
     [key: string]: object
 }
+
+export interface IInfo {
+    name: string,
+    description: string,
+    media: IMedia,
+    messages: IMessage[],
+    uid: string
+}
 interface TempalteAddState {
     pageState: number,
     messageInput: string,
-    info: {
-        name: string,
-        description: string,
-        media: IMedia,
-        messages: IMessage[]
-    },
+    messageMedia: any[]
+    info: IInfo,
     setMessageInput: (by: string, isEmogi: boolean) => void,
     increase: (by: number) => void,
     addName: (by: IAddNameAttr) => boolean,
     addMedia: (by: IMedia) => void,
     addMesages: (by: IMessage | IMessage[]) => void,
     saveInfo: () => boolean,
-    getInfoListTemplate: () => any[]
+    removeInfo: (by: string) => void
+    removeMesage: (by: number) => void
+    currenSelectMedia: (by: IMedia) => void
 }
 export interface IAddNameAttr {
     name: string,
     description: string
 }
 
-const defaulInfo = {
+const defaulInfo: IInfo = {
     name: "",
     description: "",
     media: {},
-    messages: []
+    messages: [],
+    uid: ""
 }
+
 export const useTempalteAddStore = create<TempalteAddState>()((set, get) => ({
     pageState: 0,
     info: defaulInfo,
     messageInput: "",
+    messageMedia: [],
     setMessageInput: (by: string, isEmogi: boolean) => {
         set((state) => ({ messageInput: isEmogi ? state.messageInput + by : by }))
     },
@@ -61,6 +70,20 @@ export const useTempalteAddStore = create<TempalteAddState>()((set, get) => ({
         } catch (error) {
             return false
         }
+    },
+    currenSelectMedia: (attr: IMedia) => {
+        if (Object.keys(attr).length === 0) {
+            set({ messageMedia: [] });
+            return;
+        }
+        set((state) => {
+            return {
+                messageMedia: [
+                    ...state.messageMedia,
+                    attr
+                ]
+            }
+        });
     },
     addMedia: (attr: IMedia) => {
         set((state) => ({
@@ -95,20 +118,30 @@ export const useTempalteAddStore = create<TempalteAddState>()((set, get) => ({
             }
         })
     },
+    removeMesage(id: number) {
+        set((state) => {
+            const newMessage = state.info.messages
+                .filter(({ id: idMesa }) => idMesa !== id)
+
+            return {
+                info: {
+                    ...state.info,
+                    messages: newMessage
+                }
+            }
+        })
+    },
     saveInfo: (): boolean => {
         try {
 
             const lista = window.store.get('listTemplate') || [];
+            const newListTemplate: IInfo[] = mergeArray(lista, [{
+                ...get().info,
+                uid: uid()
+            }], "uid");
 
-            window.store.set('listTemplate', [
-                ...lista,
-                {
-                    ...get().info,
-                    uid: uid()
-                }
-            ]);
-            
-            set(() => ({ info: defaulInfo, messageInput: "", pageState: 0 }));
+            window.store.set('listTemplate', newListTemplate);
+            set({ info: defaulInfo, pageState: 0, messageInput: "" })
             return true
 
         } catch (error) {
@@ -116,8 +149,18 @@ export const useTempalteAddStore = create<TempalteAddState>()((set, get) => ({
             return false
         }
     },
-    getInfoListTemplate: (): any[] => {
-        const lista = window.store.get('listTemplate') || []
-        return lista
+    removeInfo(uid: string) {
+        try {
+            console.log("uid  ", uid);
+
+            const lista = window.store.get('listTemplate') || [];
+            const newListTemplate = lista.filter((template) => template.uid !== uid)
+            console.log("newListTemplate  ", newListTemplate);
+
+            window.store.set("listTemplate", newListTemplate)
+        } catch (error) {
+            console.log(error);
+        }
     }
+
 }))

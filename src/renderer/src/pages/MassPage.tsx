@@ -9,7 +9,7 @@ export default function MassPage() {
 
     const { contacts, phone } = useAppContext("get") as { contacts: any[], phone: string[] }
     const { getContacts, setListCheck, removeCheck } = useAppContext("set")
-    const addPhone = useSendMessage((state) => state.addPhone)
+    const [addPhone] = useSendMessage((state) => [state.addPhone])
     const modalRef = useRef(null)
     const [openModal, setOpenModal] = useState<any>(null)
 

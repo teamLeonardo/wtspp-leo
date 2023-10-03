@@ -22,8 +22,14 @@ export const useSendMessage = create<ISendMessageState>()((set, get) => ({
     listStatePhone: {},
     stateAllSend: "",
     addPhone(by: string | string[]) {
-        const newBy: string[] = typeof by === "string" ? [by] : by
+        let newBy: string[] = typeof by === "string" ? [by] : by
         set((state) => {
+            newBy = newBy.reduce((accumulator, curvalue) => {
+                if (accumulator.indexOf(curvalue as never) < 0) {
+                    accumulator.push(curvalue as never)
+                }
+                return accumulator
+            }, [])
             const newList = state.list.concat(
                 newBy.filter((item) => state.list.indexOf(item) < 0)
             )
@@ -65,10 +71,8 @@ export const useSendMessage = create<ISendMessageState>()((set, get) => ({
 
             const changeState = (number, state) => {
                 set(({ listStatePhone, list }) => {
-                    const newlistStatePhone = {
-                        ...listStatePhone,
-                        ...{ [number]: state }
-                    };
+                    const newlistStatePhone = listStatePhone
+                    newlistStatePhone[number] = state
                     const countSend = Object.values(newlistStatePhone)
                         .filter((state) => state === STATE_SEND.success).length;
                     return {
@@ -90,7 +94,6 @@ export const useSendMessage = create<ISendMessageState>()((set, get) => ({
                         try {
                             changeState(number, STATE_SEND.warning)
                             for (const { message, whitMedia, pathMedia } of messages) {
-                                console.log({ message, whitMedia, pathMedia });
                                 if (whitMedia) {
                                     await window.api.invoke("getWtspp", "sendMessageMedia", number, pathMedia[0], { caption: message })
                                 } else {

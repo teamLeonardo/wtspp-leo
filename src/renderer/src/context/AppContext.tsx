@@ -70,7 +70,6 @@ export const AppContextProvider = ({ children }) => {
     const signOut = () => {
         api.invoke(getWtspp, "logout").then(() => {
             console.log("se cerro");
-
         })
     }
 

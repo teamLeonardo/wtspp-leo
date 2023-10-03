@@ -62,7 +62,7 @@ export default function TemplateOrden({ orden }) {
     };
 
     const createNewItem = (): IMessage => ({
-        id: messages.length + 1,
+        id: messages ? messages.length + 1 : 1,
         message: messageInput,
         keyMedia: isMedia ? messageMedia.map((media) => {
             return Object.keys(media)[0]
@@ -107,10 +107,10 @@ export default function TemplateOrden({ orden }) {
             >
 
                 <SortableContext
-                    items={messages}
+                    items={messages || []}
                     strategy={verticalListSortingStrategy}
                 >
-                    {messages.map((mess) => (
+                    {messages && messages.map((mess) => (
                         <MessageItem key={mess.id} {...mess} />
                     ))}
                 </SortableContext>

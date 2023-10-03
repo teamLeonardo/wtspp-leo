@@ -27,7 +27,7 @@ export const BtnMenuPlusMessage = () => {
         >
             <div className="card-body flex flex-row flex-nowrap w-full">
                 {
-                    Object.keys(media).length > 0 && Object.keys(media).map((name) => {
+                    media && Object.keys(media).length > 0 && Object.keys(media).map((name) => {
                         const value: any = media[name]
                         if ((value?.type as string).includes("image")) {
                             return <img

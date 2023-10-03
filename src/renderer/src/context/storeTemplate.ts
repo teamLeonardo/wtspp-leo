@@ -35,6 +35,7 @@ interface TempalteAddState {
     removeInfo: (by: string) => void
     removeMesage: (by: number) => void
     currenSelectMedia: (by: IMedia) => void
+    selectEditInfo: (by: IInfo) => void
 }
 export interface IAddNameAttr {
     name: string,
@@ -71,6 +72,13 @@ export const useTempalteAddStore = create<TempalteAddState>()((set, get) => ({
         } catch (error) {
             return false
         }
+    },
+    selectEditInfo(info: IInfo) {
+        if (Object.keys(info).length === 0) {
+            set({ info: defaulInfo })
+            return
+        }
+        set({ info })
     },
     currenSelectMedia: (attr: IMedia) => {
         if (Object.keys(attr).length === 0) {
@@ -111,7 +119,7 @@ export const useTempalteAddStore = create<TempalteAddState>()((set, get) => ({
                     info: {
                         ...state.info,
                         messages: [
-                            ...state.info.messages,
+                            ...(state.info.messages || []),
                             attr
                         ]
                     }
@@ -136,10 +144,11 @@ export const useTempalteAddStore = create<TempalteAddState>()((set, get) => ({
         try {
 
             const lista = window.store.get('listTemplate') || [];
-            const newListTemplate: IInfo[] = mergeArray(lista, [{
-                ...get().info,
-                uid: uid()
-            }], "uid");
+            const info = get().info
+            const newListTemplate: IInfo[] = mergeArray([{
+                ...info,
+                uid: info.uid && info.uid.length > 0 ? info.uid : uid()
+            }], lista, "uid");
 
             window.store.set('listTemplate', newListTemplate);
             set({ info: defaulInfo, pageState: 0, messageInput: "" })
@@ -152,12 +161,9 @@ export const useTempalteAddStore = create<TempalteAddState>()((set, get) => ({
     },
     removeInfo(uid: string) {
         try {
-            console.log("uid  ", uid);
 
             const lista = window.store.get('listTemplate') || [];
             const newListTemplate = lista.filter((template) => template.uid !== uid)
-            console.log("newListTemplate  ", newListTemplate);
-
             window.store.set("listTemplate", newListTemplate)
         } catch (error) {
             console.log(error);

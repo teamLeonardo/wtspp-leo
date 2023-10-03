@@ -51,7 +51,7 @@ export default function TemplateSubir({ orden }) {
         <div className="relative h-full min-h-[30px] w-full overflow-y-visible overflow-x-hidden">
             <div className="h-auto  w-full flex flex-wrap px-4 gap-6 justify-start items-center ">
                 {
-                    Object.keys(info.media).length > 0 && Object.keys(info.media).map((name) => {
+                    info.media && Object.keys(info.media).length > 0 && Object.keys(info.media).map((name) => {
                         const value: any = info.media[name]
                         if ((value?.type as string).includes("image")) {
                             return <img
